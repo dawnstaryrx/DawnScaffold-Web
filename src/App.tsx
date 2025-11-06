@@ -8,6 +8,7 @@ import AboutPage from "@/pages/front/about";
 import RegisterPage from "@/pages/login/RegisterPage";
 import LoginPage from "@/pages/login/LoginPage";
 import ResetPage from "@/pages/login/ResetPage";
+import TestPage from "@/pages/TestPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 
@@ -22,6 +23,7 @@ function App() {
       <Route element={<LoginPage />} path="/login" />
       <Route element={<RegisterPage />} path="/register" />
       <Route element={<ResetPage />} path="/reset" />
+      <Route element={<TestPage />} path="/test" />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );

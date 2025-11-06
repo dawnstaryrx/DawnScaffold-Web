@@ -14,9 +14,10 @@ export interface Result<T = any> {
  */
 export const sendCodeAPI = (
   emailOrPhone: string,
-  type: string
+  type: string,
+  token: string
 ): Promise<Result> => {
   return request.post("/sendCode", null, {
-    params: { emailOrPhone, type },
+    params: { emailOrPhone, type, token },
   });
 };
