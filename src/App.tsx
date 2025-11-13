@@ -9,6 +9,8 @@ import RegisterPage from "@/pages/login/RegisterPage";
 import LoginPage from "@/pages/login/LoginPage";
 import ResetPage from "@/pages/login/ResetPage";
 import TestPage from "@/pages/TestPage";
+import GitHubCallback from "@/pages/callback/GitHubPage";
+import LinuxDoCallback from "@/pages/callback/LinuxDoPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 
@@ -24,6 +26,8 @@ function App() {
       <Route element={<RegisterPage />} path="/register" />
       <Route element={<ResetPage />} path="/reset" />
       <Route element={<TestPage />} path="/test" />
+      <Route element={<GitHubCallback />} path="/auth/github/callback" />
+      <Route element={<LinuxDoCallback />} path="/auth/linux-do/callback" />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );

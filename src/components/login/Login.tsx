@@ -1,17 +1,62 @@
 "use client";
 
-import React from "react";
+import React, {useState} from "react";
 import {Button, Input, Checkbox, Link, Form, Divider} from "@heroui/react";
 import {Icon} from "@iconify/react";
+import { useNavigate } from "react-router-dom";
+import { loginByPasswordAPI, useGitHubLogin, useLinuxDoLogin } from "@/apis/user"; // 引入前面写的API
+import { toast } from "react-hot-toast";
 
 export const Login = () => {
   const [isVisible, setIsVisible] = React.useState(false);
 
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const navigate = useNavigate();
+
   const toggleVisibility = () => setIsVisible(!isVisible);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const { loginWithGitHub } = useGitHubLogin();
+  const { loginWithLinuxDo } = useLinuxDoLogin();
+
+  /** 登录提交 */
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("handleSubmit");
+    setErrorMsg("");
+
+    const formData = new FormData(event.currentTarget);
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+
+    if (!username || !password) {
+      setErrorMsg("请输入用户名和密码");
+      toast.error("请输入用户名和密码");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await loginByPasswordAPI({ username, password });
+      console.log("登录返回：", res);
+      if (res.code === 0 && res.data) {
+        // 保存token
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("refreshToken", res.data.refreshToken);
+        localStorage.setItem("userInfo", JSON.stringify(res.data.userInfo));
+        // 跳转首页
+        toast.success("登录成功，正在跳转首页...");
+        setTimeout(() => navigate("/"), 1000);
+      } else {
+        setErrorMsg(res.message || "登录失败，请检查账号或密码");
+        toast.error("登录失败，请检查账号或密码");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("网络异常，请稍后再试");
+      toast.error("网络异常，请稍后再试");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,9 +73,9 @@ export const Login = () => {
             isRequired
             label="用户名/邮箱/手机"
             labelPlacement="outside"
-            name="email"
+            name="username"
             placeholder="请输入用户名/邮箱/手机"
-            type="email"
+            type="text"
             variant="bordered"
           />
           <Input
@@ -65,7 +110,7 @@ export const Login = () => {
               忘记密码?
             </Link>
           </div>
-          <Button className="w-full" color="primary" type="submit">
+          <Button className="w-full" color="primary" type="submit" isLoading={loading}>
             登录
           </Button>
         </Form>
@@ -78,14 +123,16 @@ export const Login = () => {
           <Button
             // TODO  startContent={<Icon icon="flat-color-icons:google" width={24} />}
             variant="bordered"
+            onClick={loginWithLinuxDo}
           >
             使用 LinuxDo 登录
           </Button>
           <Button
-            startContent={<Icon className="text-default-500" icon="fe:github" width={24} />}
             variant="bordered"
+            startContent={<Icon icon="fe:github" width={24} />}
+            onClick={loginWithGitHub}
           >
-            使用 Github 登录
+            使用 GitHub 登录
           </Button>
         </div>
         <p className="text-small text-center">

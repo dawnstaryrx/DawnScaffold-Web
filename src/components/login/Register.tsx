@@ -1,21 +1,27 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button, Input, Checkbox, Link, Tabs, Tab } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { toast } from "react-hot-toast";
 
-import { sendCodeAPI } from "@/apis/user";
+import { sendCodeAPI, registerAPI } from "@/apis/user";
 import { CaptchaDialog } from "@/components/common/CaptchaDialog";
 
 export const Register = () => {
+  const navigate = useNavigate();
+
   const [isVisible, setIsVisible] = React.useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = React.useState(false);
 
   const [countdown, setCountdown] = React.useState(0); // 倒计时
   const [registerType, setRegisterType] = useState<"email" | "phone">("email");
   const [emailOrPhone, setEmailOrPhone] = useState<string>("");
-
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [captchaVisible, setCaptchaVisible] = useState(false); // 控制行为验证码弹窗
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -24,14 +30,67 @@ export const Register = () => {
   const toggleConfirmVisibility = () => setIsConfirmVisible(!isConfirmVisible);
 
   /** 提交注册逻辑 */
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (registerType === "email") {
-      // 📬 邮箱注册逻辑
-      console.log("邮箱注册");
-    } else {
-      // 📱 手机注册逻辑
-      console.log("手机注册");
+
+    if (!emailOrPhone) {
+      toast.error(registerType === "email" ? "请输入邮箱" : "请输入手机号");
+      return;
+    }
+    if (!code) {
+      toast.error("请输入验证码");
+      return;
+    }
+    if (!password || !confirmPassword) {
+      toast.error("请输入密码并确认");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("两次输入的密码不一致");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload =
+        registerType === "email"
+          ? {
+              type: "email",
+              email: emailOrPhone,
+              phone: "",
+              code,
+              password,
+              rePassword: confirmPassword,
+            }
+          : {
+              type: "phone",
+              email: "",
+              phone: emailOrPhone,
+              code,
+              password,
+              rePassword: confirmPassword,
+            };
+
+      const res = await registerAPI({
+        type: registerType as "email" | "phone", // ✅ 加上类型断言
+        email: registerType === "email" ? emailOrPhone : "",
+        phone: registerType === "phone" ? emailOrPhone : "",
+        code,
+        password,
+        rePassword: confirmPassword,
+      });
+
+      if (res.code === 0) {
+        toast.success("注册成功！正在跳转登录页...");
+        setTimeout(() => navigate("/login"), 1000);
+      } else {
+        toast.error(res.message || "注册失败，请重试");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("网络异常，请稍后再试");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,9 +207,11 @@ export const Register = () => {
           aria-label="注册方式"
           selectedKey={registerType}
           variant="underlined"
-          onSelectionChange={(key) =>
-            setRegisterType(key as "email" | "phone")
-          }
+          onSelectionChange={(key) => {
+            setRegisterType(key as "email" | "phone");
+            setEmailOrPhone("");
+            setCode("");
+          }}
         >
           <Tab key="email" title="邮箱注册" />
           <Tab key="phone" title="手机号注册" />
@@ -198,6 +259,8 @@ export const Register = () => {
               type="text"
               variant="bordered"
               className="flex-1"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
             />
             <Button
               type="button"
@@ -234,6 +297,8 @@ export const Register = () => {
             placeholder="请输入密码"
             type={isVisible ? "text" : "password"}
             variant="bordered"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
 
           {/* 确认密码 */}
@@ -260,6 +325,8 @@ export const Register = () => {
             placeholder="请再次输入密码"
             type={isConfirmVisible ? "text" : "password"}
             variant="bordered"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
           <Checkbox isRequired className="py-4" size="sm">
